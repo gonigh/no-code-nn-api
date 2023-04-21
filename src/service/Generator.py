@@ -15,13 +15,13 @@ def create(data):
         f.write('class GraphNet(nn.Module):\n')
         f.write('\tdef __init__(self):\n')
         f.write('\t\tsuper(GraphNet, self).__init__()\n\n')
-
         for i in data.get('node'):
-            f.write(add_layer(data.get('node')[i]))
+            f.write(add_layer(i))
         f.write('\n')
 
         f.write('\tdef forward(self, x):\n')
         list = topological_sort(data.get('node'), data.get('edge'))
+        print(list)
         for i in list:
             f.write(add_forward(i, data.get('node')))
         f.write('\t\tx = F.log_softmax(x, dim=1)\n')
@@ -37,6 +37,7 @@ def create(data):
 def add_layer(node):
     t = node['type']
     n = node['name']
+    print(n)
     s = ''
     if t == 'layer':
         s = '\t\tself.layer_{} = '.format(node['id'])
@@ -55,7 +56,6 @@ def add_layer(node):
             s += 'nn.Dropout({})\n'.format(attr_str)
         elif n == 'maxpool2d':
             s += 'nn.MaxPool2d({})\n'.format(attr_str)
-
     return s
 
 
@@ -64,9 +64,10 @@ def topological_sort(node, edge):
     dict_in = {}    # 记录入度
     dict_out = {}   # 记录出度
     # 初始化
+    print(node)
     for i in node:
-        dict_in[i] = []
-        dict_out[i] = []
+        dict_in[i['id']] = []
+        dict_out[i['id']] = []
 
     for e in edge:
         dict_out.get(e['from']).append(e['to'])
@@ -84,8 +85,11 @@ def topological_sort(node, edge):
 
 
 def add_forward(node_id, node_list):
-    t = node_list[node_id]['type']
-    node = node_list[node_id]
+    node = {}
+    for i in node_list:
+        if i['id'] is node_id:
+            node = i
+    t = node['type']
     s = ''
     if t == 'layer':
         s = '\t\tx = self.layer_{}(x)\n'.format(node_id)
