@@ -5,8 +5,8 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 import torch.nn.functional as F
-import ResNet
-Net = ResNet.Net()
+import net
+Net = net.Net
 
 
 def train(args, model, device, train_loader, optimizer, epoch):
@@ -115,6 +115,7 @@ def main():
 
     model = Net().to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
+    print(optimizer)
 
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     for epoch in range(1, args.epochs + 1):

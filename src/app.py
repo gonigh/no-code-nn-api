@@ -1,8 +1,12 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS, cross_origin
-from service.Generator import create
+from service.NetGenerator import createNet
+from service.MainGenerator import createMain
+
+
 app = Flask(__name__)
 cors = CORS(app)
+
 
 @app.route("/")
 def hello_world():
@@ -13,15 +17,24 @@ def hello_world():
 @cross_origin()
 def create_code():
     data = request.get_json()  # 获取 POST 请求中的 JSON 数据
-    res = create(data)
+    netCode = createNet(data.get('node'), data.get('edge'))
+    mainCode = createMain(data.get('loss'), data.get('optimizer'), data.get('hyperParameters'))
     # 在这里对数据进行处理和操作
-    response_data = {"code": res}
+    response_data = {"net": netCode, "main": mainCode}
     return jsonify(response_data), 200  # 返回 JSON 格式的响应和状态码
 
-@app.get('/download')
+
+@app.get('/download_net')
 @cross_origin()
-def download():
-    file_path = './output/cnn.py'
+def downloadNet():
+    file_path = './output/net.py'
+    return send_file(file_path, as_attachment=True)
+
+
+@app.get('/download_main')
+@cross_origin()
+def downloadMain():
+    file_path = './output/main.py'
     return send_file(file_path, as_attachment=True)
 
 
