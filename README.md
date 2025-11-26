@@ -9,6 +9,15 @@
 - PyTorch 与 torchvision（CPU 版即可）
 - Flask、Flask-Cors
 
+推荐的 Python 包版本（可根据自身环境调整）：
+
+- Flask >= 2.2
+- Flask-Cors >= 4.0
+- torch >= 2.0
+- torchvision >= 0.15
+
+如需在 `src/test/` 目录运行 MNIST 训练脚本，还需要保证 `torchvision` 能下载并读取 `MNIST` 数据集（默认缓存到 `src/test/data/MNIST`）。
+
 可以通过下述方式安装依赖：
 
 ```
