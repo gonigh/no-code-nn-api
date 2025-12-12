@@ -1,4 +1,5 @@
 from string import Template
+import os
 import os.path
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -119,12 +120,12 @@ lossList = {
 }
 
 def createMain(loss, optim, hyper):
-    file_path = ROOT_DIR + '\\output\\main.py'
-    print(loss, optim, hyper)
+    output_dir = os.path.join(ROOT_DIR, 'output')
+    os.makedirs(output_dir, exist_ok=True)
+    file_path = os.path.join(output_dir, 'main.py')
     # 生成可执行的Python文件
     with open(file_path, 'w') as f:
         f.write(template.substitute(lossTrain=lossList[loss]['train'], lossTest=lossList[loss]['test'], optimizerName=optim, hyperParameters=hyper))
     with open(file_path, 'r') as f:
         s = f.read()
-    print(s)
     return s
