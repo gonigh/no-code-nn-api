@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS, cross_origin
 from service.NetGenerator import createNet
@@ -6,6 +8,9 @@ from service.MainGenerator import createMain
 
 app = Flask(__name__)
 cors = CORS(app)
+
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_DIR = os.path.join(ROOT_DIR, "output")
 
 
 @app.route("/")
@@ -27,14 +32,14 @@ def create_code():
 @app.get('/download_net')
 @cross_origin()
 def downloadNet():
-    file_path = './output/net.py'
+    file_path = os.path.join(OUTPUT_DIR, 'net.py')
     return send_file(file_path, as_attachment=True)
 
 
 @app.get('/download_main')
 @cross_origin()
 def downloadMain():
-    file_path = './output/main.py'
+    file_path = os.path.join(OUTPUT_DIR, 'main.py')
     return send_file(file_path, as_attachment=True)
 
 

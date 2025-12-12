@@ -1,11 +1,41 @@
 # 可执行python代码构造器
+import os
 import os.path
+from typing import Any, Dict, Iterable, List, Union
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+def _as_id(v: Any) -> Any:
+    """
+    兼容前端传入的 string/int id。
+    - "1" -> 1
+    - 1 -> 1
+    - 其它保持原样
+    """
+    try:
+        return int(v)
+    except Exception:
+        return v
+
+
+def _normalize_nodes(nodes: Union[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]) -> List[Dict[str, Any]]:
+    """
+    兼容两种输入:
+    - list[dict] (前端常见)
+    - dict[str, dict] (entity/cnn.json 当前格式)
+    """
+    if isinstance(nodes, dict):
+        return list(nodes.values())
+    return list(nodes)
+
+
 def createNet(nodes, edges):
-    file_path = ROOT_DIR + '\\output\\net.py'
+    output_dir = os.path.join(ROOT_DIR, 'output')
+    os.makedirs(output_dir, exist_ok=True)
+    file_path = os.path.join(output_dir, 'net.py')
+
+    nodes_list = _normalize_nodes(nodes)
 
     # 生成可执行的Python文件
     with open(file_path, 'w') as f:
@@ -15,14 +45,14 @@ def createNet(nodes, edges):
         f.write('class Net(nn.Module):\n')
         f.write('\tdef __init__(self):\n')
         f.write('\t\tsuper(Net, self).__init__()\n\n')
-        for i in nodes:
+        for i in nodes_list:
             f.write(add_layer(i))
         f.write('\n')
 
         f.write('\tdef forward(self, x):\n')
-        list = topological_sort(nodes, edges)
-        for i in list:
-            f.write(add_forward(i, nodes))
+        order = topological_sort(nodes_list, edges)
+        for node_id in order:
+            f.write(add_forward(node_id, nodes_list))
         f.write('\t\tx = F.log_softmax(x, dim=1)\n')
         f.write('\t\treturn x\n')
     s = ''
@@ -57,33 +87,38 @@ def add_layer(node):
 
 
 def topological_sort(node, edge):
-    list = []
+    order = []
     dict_in = {}    # 记录入度
     dict_out = {}   # 记录出度
     # 初始化
     for i in node:
-        dict_in[i['id']] = []
-        dict_out[i['id']] = []
+        node_id = _as_id(i['id'])
+        dict_in[node_id] = []
+        dict_out[node_id] = []
 
     for e in edge:
-        dict_out.get(e['from']).append(e['to'])
-        dict_in.get(e['to']).append(e['from'])
+        frm = _as_id(e.get('from'))
+        to = _as_id(e.get('to'))
+        if frm in dict_out:
+            dict_out[frm].append(to)
+        if to in dict_in:
+            dict_in[to].append(frm)
 
-    while len(list) != len(node):
-        for key in dict_in.keys():
+    while len(order) != len(node):
+        for key in list(dict_in.keys()):
             if len(dict_in.get(key)) == 0:
-                list.append(key)
+                order.append(key)
                 for k in dict_out.get(key):
                     dict_in.get(k).remove(key)
                 dict_in.pop(key)
                 break
-    return list
+    return order
 
 
 def add_forward(node_id, node_list):
     node = {}
     for i in node_list:
-        if i['id'] is node_id:
+        if _as_id(i['id']) == node_id:
             node = i
     t = node['type']
     s = ''
@@ -99,6 +134,6 @@ def add_forward(node_id, node_list):
             s = '\t\tx = F.relu(x)\n'
         elif n == 'sigmoid':
             s = '\t\tx = F.sigmoid(x)\n'
-        elif n == 'tahn':
-            s = '\t\tx = F.tahn(x)\n'
+        elif n in ('tanh', 'tahn'):
+            s = '\t\tx = torch.tanh(x)\n'
     return s
